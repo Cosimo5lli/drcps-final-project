@@ -172,9 +172,6 @@ void update_distance_estimate()
 
 void loop()
 {
-  // "empty" the string
-  mydata->current_doing[0] = 0;
-
   if (mydata->is_new_message)
   {
     mydata->is_new_message = false;
@@ -183,18 +180,20 @@ void loop()
 
   if (mydata->target_catched)
   {
-    sprintf(mydata->current_doing, "CATCHED");
+    mydata->currently_doing = CATCHED;
     return;
   }
-  //if no message has been received for a long time
+  //if no message has been received for a long time (only apply to catchers, the runner simply run)
   if (mydata->last_reception_time + TIME_TO_CONSIDER_OUT_OF_RANGE <= kilo_ticks && kilo_uid != mydata->target_uid)
   {
     move_to_find_other_bots();
-    sprintf(mydata->current_doing, "SEARCHING OTHERS");
+    //reset everything that matters for catching bots
+    mydata->currently_doing = SEARCHING;
     mydata->cur_distance = UINT8_MAX;
     mydata->cur_position = UINT8_MAX;
     mydata->distance_to_target = UINT8_MAX;
     mydata->following_distance_to_target = UINT8_MAX;
+    //stop transmitting (would transmit wrong data to other bots)
     mydata->stop_message = true;
     return;
   }
@@ -203,12 +202,12 @@ void loop()
   if (kilo_uid == mydata->target_uid)
   {
     move_random_direction();
-    sprintf(mydata->current_doing, "MOVING RANDOMLY");
+    mydata->currently_doing = RUNNING;
   }
   else
   {
     catch_other_bot();
-    sprintf(mydata->current_doing, "CATCHING target: %i, following: %i", mydata->target_uid, mydata->following_uid);
+    mydata->currently_doing = CATCHING;
   }
 }
 
@@ -270,7 +269,7 @@ char *cb_botinfo(void)
   p += sprintf(p, "ID: %d, ", kilo_uid);
   p += sprintf(p, "Direction: %s", motion_to_string(mydata->curr_direction));
   p += sprintf(p, ", Dtt: %i, sending: [%i, %i]\n", mydata->distance_to_target, mydata->transmit_msg.data[0], mydata->transmit_msg.data[1]);
-  p += sprintf(p, "target: %i, following: %i, t: %i, i: %i, doing %s\n", mydata->target_uid, mydata->following_uid, mydata->t, mydata->i, mydata->current_doing);
+  p += sprintf(p, "target: %i, following: %i, t: %i, i: %i, doing %s\n", mydata->target_uid, mydata->following_uid, mydata->t, mydata->i, action_to_string(mydata->currently_doing));
   return botinfo_buffer;
 }
 #endif

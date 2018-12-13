@@ -41,6 +41,31 @@ char *motion_to_string(motion_t motion)
     }
 }
 
+typedef enum action
+{
+    CATCHED,
+    SEARCHING,
+    RUNNING,
+    CATCHING
+} action_t;
+
+char *action_to_string(action_t action)
+{
+    switch (action)
+    {
+    case CATCHED:
+        return "CATCHED";
+    case SEARCHING:
+        return "SEARCHING OTHERS";
+    case RUNNING:
+        return "MOVING RANDOMLY";
+    case CATCHING:
+        return "CATCHING";
+    default:
+        return "<invalid action>";
+    }
+}
+
 // declare variables
 
 typedef struct
@@ -78,5 +103,5 @@ typedef struct
     //last received message
     message_t received_msg;
     //for debugging
-    char current_doing[50];
+    action_t currently_doing;
 } USERDATA;
