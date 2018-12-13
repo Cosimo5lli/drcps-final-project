@@ -268,21 +268,7 @@ char *cb_botinfo(void)
 {
   char *p = botinfo_buffer;
   p += sprintf(p, "ID: %d, ", kilo_uid);
-  switch (mydata->curr_direction)
-  {
-  case STOP:
-    p += sprintf(p, "Direction: STOP");
-    break;
-  case FORWARD:
-    p += sprintf(p, "Direction: FORWARD");
-    break;
-  case LEFT:
-    p += sprintf(p, "Direction: LEFT");
-    break;
-  case RIGHT:
-    p += sprintf(p, "Direction: RIGHT");
-    break;
-  }
+  p += sprintf(p, "Direction: %s", motion_to_string(mydata->curr_direction));
   p += sprintf(p, ", Dtt: %i, sending: [%i, %i]\n", mydata->distance_to_target, mydata->transmit_msg.data[0], mydata->transmit_msg.data[1]);
   p += sprintf(p, "target: %i, following: %i, t: %i, i: %i, doing %s\n", mydata->target_uid, mydata->following_uid, mydata->t, mydata->i, mydata->current_doing);
   return botinfo_buffer;

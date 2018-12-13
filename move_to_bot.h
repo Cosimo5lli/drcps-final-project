@@ -24,6 +24,23 @@ typedef enum
     RIGHT
 } motion_t;
 
+char *motion_to_string(motion_t motion)
+{
+    switch (motion)
+    {
+    case STOP:
+        return "STOP";
+    case FORWARD:
+        return "FORWARD";
+    case LEFT:
+        return "LEFT";
+    case RIGHT:
+        return "RIGHT";
+    default:
+        return "<invalid motion>";
+    }
+}
+
 // declare variables
 
 typedef struct
