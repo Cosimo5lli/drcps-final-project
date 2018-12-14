@@ -187,7 +187,6 @@ void play_the_game()
   //if no message has been received for a long time
   if (mydata->last_reception_time + TIME_TO_CONSIDER_OUT_OF_RANGE <= kilo_ticks && mydata->my_color != mydata->target_color)
   {
-    move_to_find_other_bots();
     //reset everything that matters for catching bots
     mydata->currently_doing = SEARCHING;
     mydata->cur_distance = UINT8_MAX;
@@ -196,6 +195,7 @@ void play_the_game()
     mydata->following_distance_to_target = UINT8_MAX;
     //stop transmitting (would transmit wrong data to other bots)
     mydata->stop_message = true;
+    move_to_find_other_bots();
     return;
   }
 
@@ -218,12 +218,14 @@ void loop()
   {
   case CHOOSE_COLOR:
     assign_color();
-    mydata->stop_message = mydata->my_color == mydata->target_color ? 0 : 1;
-    mydata->phase = PLAY;
+    mydata->phase = TARGET;
     break;
   case CHOOSE_WITCH:
     break;
   case TARGET:
+    mydata->target_color = RGB(3, 3, 3);
+    mydata->stop_message = mydata->my_color == mydata->target_color ? 0 : 1;
+    mydata->phase = PLAY;
     break;
   case PLAY:
     play_the_game();
@@ -268,7 +270,6 @@ message_t *message_tx()
 
 void setup()
 {
-  mydata->target_color = RGB(3, 3, 3);
   mydata->cur_distance = 0;
   mydata->is_new_message = false;
   mydata->distance_to_target = UINT8_MAX;
