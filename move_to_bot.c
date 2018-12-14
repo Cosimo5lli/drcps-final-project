@@ -170,7 +170,7 @@ void update_distance_estimate()
   }
 }
 
-void loop()
+void play_the_game()
 {
   if (mydata->is_new_message)
   {
@@ -208,6 +208,26 @@ void loop()
   {
     catch_other_bot();
     mydata->currently_doing = CATCHING;
+  }
+}
+
+void loop()
+{
+  switch (mydata->phase)
+  {
+  case CHOOSE_COLOR:
+    assign_color();
+    mydata->phase = PLAY;
+    break;
+  case CHOOSE_WITCH:
+    break;
+  case TARGET:
+    break;
+  case PLAY:
+    play_the_game();
+    break;
+  case END_GAME:
+    break;
   }
 }
 
@@ -256,8 +276,7 @@ void setup()
   mydata->target_catched = false;
   mydata->t = 0;
   mydata->i = 1;
-  setup_message();
-  assign_color();
+  mydata->phase = CHOOSE_COLOR;
 }
 
 #ifdef SIMULATOR

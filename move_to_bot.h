@@ -66,6 +66,15 @@ char *action_to_string(action_t action)
     }
 }
 
+typedef enum
+{
+    CHOOSE_COLOR,
+    CHOOSE_WITCH,
+    TARGET,
+    PLAY,
+    END_GAME
+} phases_t;
+
 // declare variables
 
 typedef struct
@@ -104,4 +113,5 @@ typedef struct
     message_t received_msg;
     //for debugging
     action_t currently_doing;
+    phases_t phase;
 } USERDATA;
