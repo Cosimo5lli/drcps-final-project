@@ -79,6 +79,8 @@ typedef enum
 
 typedef struct
 {
+    //the color of this bot
+    uint8_t my_color;
     //current distance from another bot
     uint8_t cur_distance;
     //previous distance from another bot
@@ -101,10 +103,10 @@ typedef struct
     int t;
     //for spiral movement
     int i;
-    //the id of the target bot
-    uint8_t target_uid;
-    //the id of the bot that this bot is currently following (maybe is the target, maybe not)
-    uint8_t following_uid;
+    //the color of the target bot
+    uint8_t target_color;
+    //the color of the bot that this bot is currently following (maybe is the target, maybe not)
+    uint8_t following_color;
     //the last distance measurment received
     distance_measurement_t dist;
     //the message to be transmitted
