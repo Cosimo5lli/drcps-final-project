@@ -6,12 +6,12 @@
 //good values are 3 or 4
 //2 leads to a spiral diverging too slowly
 //values bigger than 5 leads to bots dispersing too much
-#define SPIRAL_INCREMENT 5
+#define SPIRAL_INCREMENT 3
 // time in seconds after which the spiral movent of the bot will be reset
-#define SECONDS_RESET_SPIRAL 150
+#define SECONDS_RESET_SPIRAL 65
 // 2 seconds, after that time the bot should consider to be oout of communication range
 // and start to move to search for other bots
-#define TIME_TO_CONSIDER_OUT_OF_RANGE 64
+#define TIME_TO_CONSIDER_OUT_OF_RANGE 40
 // the threashold for considering 2 bots touching
 #define RANGE_TO_TOUCH 50
 

@@ -1,6 +1,6 @@
 {
-    "botName" : "Whitch says color",
-    "randSeed" : 2,
+    "botName" : "Witch says color",
+    "randSeed" : 32,
     "nBots" : 10,
     "timeStep" : 0.0416666,
     "__note" : "0.04166 is 24 FPS which matches the movie frame rate",
@@ -9,7 +9,7 @@
     "commsRadius" : 100,
     "showComms" : 1,
     "showCommsRadius" : 1,
-    "distributePercent" : 0.8,
+    "distributePercent" : 0.5,
     "displayWidth"  : 1140,
     "displayHeight" : 720,
     "displayWidthPercent" : 80,
