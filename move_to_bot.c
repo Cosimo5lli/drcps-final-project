@@ -62,38 +62,57 @@ void assign_color()
   set_color(mydata->my_color);
 }
 
+void move_direction_for_seconds(motion_t direction, uint8_t seconds)
+{
+  if (mydata->t * 32 < kilo_ticks && kilo_ticks < (mydata->t + seconds / 2) * 32)
+  {
+    set_motion(direction);
+    //skip seconds
+    mydata->t += seconds;
+  }
+  else if (kilo_ticks > (mydata->t + seconds) * 32)
+  {
+    mydata->t = kilo_ticks / 32;
+  }
+}
+
 void move_random_direction()
 {
-  if (mydata->t * 32 < kilo_ticks && kilo_ticks < (mydata->t + 2) * 32)
+  //actually, random int from 1 to 3, 1 = FORWARD, 2 = LEFT and 3 = RIGHT
+  move_direction_for_seconds((rand_soft() % 3) + 1, 3);
+}
+
+void change_direction_based_on_distance(bool run_away)
+{
+  if (run_away ? mydata->cur_distance < mydata->cur_position : mydata->cur_distance > mydata->cur_position)
   {
-    //actually, random int from 1 to 3, 1 = FORWARD, 2 = LEFT and 3 = RIGHT
-    set_motion((rand_soft() % 3) + 1);
-    //skip 2 seconds
-    mydata->t += 4;
+    if (mydata->curr_direction == LEFT)
+    {
+      move_direction_for_seconds(RIGHT, 4);
+    }
+    else if (mydata->curr_direction == RIGHT)
+    {
+      move_direction_for_seconds(LEFT, 3);
+    }
+    else
+    {
+      move_direction_for_seconds((rand_soft() % 2 + 2), 2);
+    }
+  }
+  else if (mydata->cur_distance == mydata->cur_position)
+  {
+    move_direction_for_seconds(FORWARD, 2);
   }
 }
 
 void catch_other_bot()
 {
-  if (mydata->cur_distance > mydata->cur_position)
-  {
-    if (mydata->curr_direction == LEFT)
-    {
-      set_motion(RIGHT);
-    }
-    else if (mydata->curr_direction == RIGHT)
-    {
-      set_motion(LEFT);
-    }
-    else
-    {
-      set_motion((rand_soft() % 2 + 2));
-    }
-  }
-  else if (mydata->cur_distance == mydata->cur_position)
-  {
-    set_motion(FORWARD);
-  }
+  change_direction_based_on_distance(false);
+}
+
+void run_away_from_others()
+{
+  change_direction_based_on_distance(true);
 }
 
 void move_to_find_other_bots()
@@ -136,6 +155,9 @@ void update_distance_estimate()
   {
     //the target consider everyone else a target (whoever catches him, he must stop)
     mydata->distance_to_target = distance_estimate < mydata->distance_to_target ? distance_estimate : mydata->distance_to_target;
+    mydata->cur_position = mydata->cur_distance;
+    mydata->cur_distance = distance_estimate;
+    mydata->following_color = mydata->received_msg.data[0];
   }
   else
   {
@@ -185,30 +207,41 @@ void play_the_game()
     return;
   }
   //if no message has been received for a long time
-  if (mydata->last_reception_time + TIME_TO_CONSIDER_OUT_OF_RANGE <= kilo_ticks && mydata->my_color != mydata->target_color)
+  bool out_of_range = mydata->last_reception_time + TIME_TO_CONSIDER_OUT_OF_RANGE <= kilo_ticks;
+
+  //out of range: target bot is moving randomly, catchers are trying to find him
+  if (out_of_range)
   {
     //reset everything that matters for catching bots
-    mydata->currently_doing = SEARCHING;
     mydata->cur_distance = UINT8_MAX;
     mydata->cur_position = UINT8_MAX;
     mydata->distance_to_target = UINT8_MAX;
     mydata->following_distance_to_target = UINT8_MAX;
-    //stop transmitting (would transmit wrong data to other bots)
-    mydata->stop_message = true;
-    move_to_find_other_bots();
-    return;
-  }
-
-  // target bot is running away, other ones are trying to catch up (katchup?)
-  if (mydata->my_color == mydata->target_color)
-  {
-    move_random_direction();
-    mydata->currently_doing = RUNNING;
+    if (mydata->my_color == mydata->target_color)
+    {
+      move_random_direction();
+      mydata->currently_doing = RANDOMLY;
+    }
+    else
+    {
+      mydata->stop_message = true;
+      move_to_find_other_bots();
+      mydata->currently_doing = SEARCHING;
+    }
   }
   else
+  //in range: target bot is running away, catchers are trying to catch up (katchup?)
   {
-    catch_other_bot();
-    mydata->currently_doing = CATCHING;
+    if (mydata->my_color == mydata->target_color)
+    {
+      run_away_from_others();
+      mydata->currently_doing = RUNNING;
+    }
+    else
+    {
+      catch_other_bot();
+      mydata->currently_doing = CATCHING;
+    }
   }
 }
 

@@ -45,6 +45,7 @@ typedef enum action
 {
     CATCHED,
     SEARCHING,
+    RANDOMLY,
     RUNNING,
     CATCHING
 } action_t;
@@ -58,6 +59,8 @@ char *action_to_string(action_t action)
     case SEARCHING:
         return "SEARCHING OTHERS";
     case RUNNING:
+        return "RUNNING AWAY";
+    case RANDOMLY:
         return "MOVING RANDOMLY";
     case CATCHING:
         return "CATCHING";
