@@ -8,12 +8,14 @@
 // values bigger than 5 leads to bots dispersing too much
 #define SPIRAL_INCREMENT 3
 // time in seconds after which the spiral movent of the bot will be reset
-#define SECONDS_RESET_SPIRAL 65
+#define SECONDS_RESET_SPIRAL 60
 // 2 seconds, after that time the bot should consider to be oout of
 // communication range and start to move to search for other bots
 #define TIME_TO_CONSIDER_OUT_OF_RANGE 40
 // the threashold for considering 2 bots touching
 #define RANGE_TO_TOUCH 50
+// number of games to play
+#define NUM_OF_GAMES 3
 
 // declare motion variable type
 typedef enum { STOP, FORWARD, LEFT, RIGHT } motion_t;
@@ -58,15 +60,18 @@ char *action_to_string(action_t action) {
   }
 }
 
+// alcuni valori sono forzati per evitare che siano nel range 0 - 63, poiché si
+// confonderebbero coi colori quando li inviano
 typedef enum {
-  CONNECT,
+  CONNECT = 100,
   CONNECTED,
   CHOOSE_WITCH,
-  CHOOSE_TARGET=240,
+  CHOOSE_TARGET = 240,
   BEFORE_GAME,
   PLAY,
-  END_GAME,
-  BROADCAST_MSGS
+  END_GAME = 200,
+  RESET_GAME,
+  BROADCAST_MSGS,
 } phases_t;
 
 char *phase_to_string(phases_t phase) {
@@ -85,6 +90,8 @@ char *phase_to_string(phases_t phase) {
     return "PLAYING";
   case END_GAME:
     return "END GAME";
+  case RESET_GAME:
+    return "RESET EVERYTHING";
   case BROADCAST_MSGS:
     return "BROADCASTING MESSAGES";
   default:
@@ -134,6 +141,6 @@ typedef struct {
   action_t currently_doing;
   phases_t phase;
   uint16_t connections;
-  bool i_am_the_witch;
   bool moving;
+  uint8_t games_counter;
 } USERDATA;
