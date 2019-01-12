@@ -1,5 +1,5 @@
 {
-    "botName" : "Orbit bot",
+    "botName" : "Witch says color",
     "randSeed" : 2,
     "nBots" : 10,
     "timeStep" : 0.0416666,
@@ -10,8 +10,8 @@
     "showComms" : 1,
     "showCommsRadius" : 1,
     "distributePercent" : 0.8,
-    "displayWidth"  : 1140,
-    "displayHeight" : 720,
+    "displayWidth"  : 720,
+    "displayHeight" : 480,
     "displayWidthPercent" : 80,
     "displayHeightPercent" : 80,
     "displayScale"  : 1,
