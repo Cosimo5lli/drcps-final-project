@@ -62,10 +62,18 @@ void clean_array_SR() {
   }
 }
 
-uint8_t get_color_for_id(uint8_t id) {
-  return RGB(kilo_uid, (3 - kilo_uid), ((6 - kilo_uid) / 2));
-  // return id;
+void clean_array_S() {
+  for (int i = 0; i < 4; i++) {
+    mydata->transmit_msg.data[i] = 0;
+  }
 }
+
+uint8_t get_color_for_id(uint8_t id) {
+  // return RGB((id >> 4), (id >> 2), (3 - id)) + 23;
+  return id + 23;
+}
+
+uint8_t get_id_from_color(uint8_t color) { return color - 23; }
 
 void assign_color() {
   mydata->my_color = get_color_for_id(kilo_uid);
@@ -112,9 +120,11 @@ void change_direction_based_on_distance(bool run_away) {
   if (run_away ? mydata->cur_distance < mydata->cur_position
                : mydata->cur_distance > mydata->cur_position) {
     if (mydata->curr_direction == LEFT) {
-      move_direction_for_seconds(RIGHT, 2);
+      // move_direction_for_seconds(RIGHT, 2);
+      set_motion(RIGHT);
     } else if (mydata->curr_direction == RIGHT) {
-      move_direction_for_seconds(LEFT, 2);
+      // move_direction_for_seconds(LEFT, 2);
+      set_motion(LEFT);
     } else {
       move_direction_for_seconds((rand_soft() % 2 + 2), 2);
     }
@@ -135,13 +145,16 @@ void run_away_from_others() {
 
 void move_to_find_other_bots() {
   mydata->currently_doing = SEARCHING;
-  if (kilo_ticks > 32 * (mydata->t) && kilo_ticks < 32 * (mydata->t + 3)) { // diminuire qui allarga spirale
+  if (kilo_ticks > 32 * (mydata->t) &&
+      kilo_ticks < 32 * (mydata->t + 3)) { // diminuire qui allarga spirale
     set_motion(RIGHT);
   } else if (kilo_ticks > 32 * (mydata->t + 3) &&
-             kilo_ticks < 32 * (mydata->t + 6)) { // aumentare questo allarga spirale
+             kilo_ticks <
+                 32 * (mydata->t + 6)) { // aumentare questo allarga spirale
     set_motion(FORWARD);
     mydata->t = mydata->t + mydata->i;
-    mydata->i = mydata->i + SPIRAL_INCREMENT; //modificare questo cambia forma spirale in modo molto casuale
+    mydata->i = mydata->i + SPIRAL_INCREMENT; // modificare questo cambia forma
+                                              // spirale in modo molto casuale
   } else if (kilo_ticks > 32 * (mydata->t + mydata->i + 3)) {
     // reset things if t has remained set to a previous value that is too low
     // and would cause the bot to always turn right
@@ -151,12 +164,13 @@ void move_to_find_other_bots() {
   // reset the spiral if it's too much that the bot is swirling around
   if ((kilo_ticks - mydata->last_reception_time) % (SECONDS_RESET_SPIRAL * 32) <
       3) {
-    mydata->i = 1;
+    // mydata->i = 1;
   }
 }
 
 void set_catched() {
   mydata->target_catched = true;
+  mydata->stop_message = false;
   set_motion(STOP);
   set_color(RGB(0, 0, 0));
 }
@@ -202,6 +216,11 @@ void update_distance_estimate() {
     }
   }
   if (mydata->distance_to_target < RANGE_TO_TOUCH) {
+    if (!mydata->target_catched && mydata->target_color == mydata->my_color &&
+        mydata->received_msg.data[1] < RANGE_TO_TOUCH) {
+      printf("### BOT %i IS THE WINNER!\n",
+             get_id_from_color(mydata->received_msg.data[0]));
+    }
     set_catched();
   }
 }
@@ -222,7 +241,8 @@ void play_the_game() {
 
   // out of range: target bot is moving randomly, catchers are trying to find
   // him
-  // || mydata->distance_to_target >= 255 <-- aggiungere questo nell'if??? Può starci, boh
+  // || mydata->distance_to_target >= 255 <-- aggiungere questo nell'if??? Può
+  // starci, boh
   if (out_of_range) {
     // reset everything that matters for catching bots
     mydata->cur_distance = UINT8_MAX;
@@ -232,7 +252,13 @@ void play_the_game() {
     if (mydata->my_color == mydata->target_color) {
       move_random_direction();
     } else {
-      mydata->stop_message = true;
+      // if this is the first time the bot exit comm range (otherwise
+      // stop_message is already true) then we reset the spiral, so the bot
+      // will very likely re-enter in range quickly
+      if (!mydata->stop_message) {
+        mydata->i = 0;
+        mydata->stop_message = true;
+      }
       move_to_find_other_bots();
     }
   } else
@@ -274,8 +300,7 @@ bool first_phase() {
   mydata->transmit_msg.data[0] = CONNECT;
   send_connections();
 
-  // if this bot has not stopped, it means it cannot connect with bot 1, so look
-  // for it
+  // if this bot has no connection with bot 1, look for it
   if (!((mydata->connections >> 1) & 1)) {
     move_to_find_other_bots();
     return false;
@@ -308,6 +333,13 @@ void setup() {
 }
 
 void loop() {
+  // if some message is lost, this should ensure some kind of phase
+  // synchronization among bots
+  phases_t msg_phase = mydata->received_msg.data[0];
+  if (mydata->phase >= CONNECT && mydata->phase < PLAY && msg_phase > CONNECT &&
+      msg_phase <= PLAY && mydata->phase < msg_phase) {
+    mydata->phase = msg_phase;
+  }
   switch (mydata->phase) {
   case CONNECT:
     if (first_phase()) {
@@ -316,8 +348,8 @@ void loop() {
     }
     break;
   case CONNECTED:
-    if (kilo_ticks > mydata->t + 5 * 32) {
-      clean_array_SR();
+    if (kilo_ticks > mydata->t + 10 * 32) {
+      clean_array_S();
       mydata->phase = kilo_uid == 1 ? CHOOSE_WITCH : BROADCAST_MSGS;
     }
     break;
@@ -326,16 +358,19 @@ void loop() {
     int witch = (rand_soft() % 10);
     printf("Witch: %i\n", witch);
     // clean_array_SR();
+    // clean_array_S();
     mydata->transmit_msg.data[1] = witch;
     mydata->transmit_msg.data[0] = CHOOSE_WITCH; // phase
     mydata->phase = BROADCAST_MSGS;
     break;
   case CHOOSE_TARGET:
     NULL;
-    uint8_t chosen_id = rand_soft() % 10;
+    uint8_t chosen_id = (rand_soft() % 10);
     mydata->target_color = get_color_for_id(chosen_id);
     printf("Bot %i, target color: %i, target id: %i\n", kilo_uid,
            mydata->target_color, chosen_id);
+
+    clean_array_S();
 
     // send it to the other bots
     mydata->transmit_msg.data[0] = CHOOSE_TARGET;
@@ -359,11 +394,11 @@ void loop() {
                                        : mydata->distance_to_target;
     // mydata->stop_message = false;
     play_the_game();
-    if (mydata->target_catched || mydata->received_msg.data[0] == END_GAME) {
-      mydata->connections = 1 << kilo_uid;
-      clean_array_SR();
-      mydata->phase = END_GAME;
-    }
+    // if (mydata->target_catched || mydata->received_msg.data[0] == END_GAME) {
+    //   mydata->connections = 1 << kilo_uid;
+    //   clean_array_SR();
+    //   mydata->phase = END_GAME;
+    // }
     break;
   case END_GAME:
     mydata->t = 0;
@@ -383,7 +418,8 @@ void loop() {
   case BROADCAST_MSGS:
     if ((kilo_uid != 1 || mydata->received_msg.data[0] == CHOOSE_TARGET ||
          mydata->received_msg.data[0] == CHOOSE_WITCH) &&
-        mydata->received_msg.data[0]) {
+        mydata->received_msg.data[0] > CONNECT) {
+      clean_array_S();
       mydata->transmit_msg.data[0] = mydata->received_msg.data[0];
       mydata->transmit_msg.data[1] = mydata->received_msg.data[1];
     }
@@ -397,6 +433,7 @@ void loop() {
       mydata->target_color = mydata->received_msg.data[1];
       mydata->t = kilo_ticks;
       mydata->phase = BEFORE_GAME;
+      // clean_array_SR();
     }
     break;
   case RESET_GAME:
@@ -449,10 +486,10 @@ char *cb_botinfo(void) {
   char *p = botinfo_buffer;
   p += sprintf(p, "ID: %d, ", kilo_uid);
   p += sprintf(p, "Direction: %s", motion_to_string(mydata->curr_direction));
-  p += sprintf(p, ", Dtt: %i, sending: [%i, %i, %i, %i]\n",
+  p += sprintf(p, ", Dtt: %i, sending: [%i, %i, %i, %i], connections: %i\n",
                mydata->distance_to_target, mydata->transmit_msg.data[0],
                mydata->transmit_msg.data[1], mydata->transmit_msg.data[2],
-               mydata->transmit_msg.data[3]);
+               mydata->transmit_msg.data[3], mydata->connections);
   p += sprintf(p, "color: %i, phase: %s, receiving: [%i, %i, %i, %i]\n",
                mydata->my_color, phase_to_string(mydata->phase),
                mydata->received_msg.data[0], mydata->received_msg.data[1],

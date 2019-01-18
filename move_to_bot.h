@@ -63,13 +63,13 @@ char *action_to_string(action_t action) {
 // alcuni valori sono forzati per evitare che siano nel range 0 - 63, poiché si
 // confonderebbero coi colori quando li inviano
 typedef enum {
-  CONNECT = 100,
+  CONNECT = 200,
   CONNECTED,
   CHOOSE_WITCH,
-  CHOOSE_TARGET = 240,
+  CHOOSE_TARGET,
   BEFORE_GAME,
   PLAY,
-  END_GAME = 200,
+  END_GAME,
   RESET_GAME,
   BROADCAST_MSGS,
 } phases_t;
