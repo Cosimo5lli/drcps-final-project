@@ -7,8 +7,6 @@
 // 2 leads to a spiral diverging too slowly
 // values bigger than 5 leads to bots dispersing too much
 #define SPIRAL_INCREMENT 3
-// time in seconds after which the spiral movent of the bot will be reset
-#define SECONDS_RESET_SPIRAL 60
 // 2 seconds, after that time the bot should consider to be oout of
 // communication range and start to move to search for other bots
 #define TIME_TO_CONSIDER_OUT_OF_RANGE 40
@@ -72,6 +70,8 @@ typedef enum {
   END_GAME,
   RESET_GAME,
   BROADCAST_MSGS,
+  WAITING_END,
+  SPREAD
 } phases_t;
 
 char *phase_to_string(phases_t phase) {
@@ -94,6 +94,10 @@ char *phase_to_string(phases_t phase) {
     return "RESET EVERYTHING";
   case BROADCAST_MSGS:
     return "BROADCASTING MESSAGES";
+  case SPREAD:
+    return "SPREADING AWAY";
+  case WAITING_END:
+    return "WAITING OTHERS TO END";
   default:
     return "<invalid phase>";
   }
